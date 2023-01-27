@@ -37,10 +37,14 @@
 #include <Stepper.h>
 #include <PDM.h>
 #include <bsec2.h>
+#include <Notecard.h>
 
 /* Macros used */
 #define PANIC_LED   LED_BUILTIN
 #define ERROR_DUR   1000
+
+#define productUID ""
+Notecard notecard;
 
 /** Audio buffers, pointers and selectors */
 typedef struct {
@@ -104,8 +108,12 @@ void setup()
       break;
     }
   }
+  notecard.setDebugOutputStream(Serial);
   Serial.println("Edge Impulse Inferencing Demo");
+  Wire.setSDA(0);
+  Wire.setSCL(1);
   Wire.begin();
+  notecard.begin();
   pinMode(PANIC_LED, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(22, OUTPUT);
@@ -129,7 +137,7 @@ void setup()
   }
 
   /* Subsribe to the desired BSEC2 outputs */
-  if (!envSensor.updateSubscription(sensorList, ARRAY_LEN(sensorList), BSEC_SAMPLE_RATE_LP))
+  if (!envSensor.updateSubscription(sensorList, ARRAY_LEN(sensorList), BSEC_SAMPLE_RATE_ULP))
   {
     checkBsecStatus(envSensor);
   }
@@ -142,6 +150,7 @@ void setup()
                  + String(envSensor.version.minor) + "." \
                  + String(envSensor.version.major_bugfix) + "." \
                  + String(envSensor.version.minor_bugfix));
+
 
   // summary of inferencing settings (from model_metadata.h)
   ei_printf("Inferencing settings:\n");
@@ -157,6 +166,13 @@ void setup()
     return;
   }
 
+  J *req = notecard.newRequest("hub.set");
+  JAddStringToObject(req, "product", productUID);
+  JAddStringToObject(req, "mode", "continuous");
+  notecard.sendRequest(req);
+
+  randomSeed(analogRead(0));
+
 
 }
 
@@ -167,13 +183,8 @@ int consecutive_count = 0;
 void loop()
 {
 
-  if (!envSensor.run())
-  {
-    checkBsecStatus(envSensor);
-  }
-  ei_printf("Starting inferencing in 2 seconds...\n");
 
-  delay(2000);
+  delay(30000);
 
   ei_printf("Recording...\n");
 
@@ -228,6 +239,21 @@ void loop()
 
       }
     }
+  }
+
+  J *req = notecard.newRequest("note.add");
+  if (req != NULL) {
+    JAddStringToObject(req, "file", "sensors.qo");
+    JAddBoolToObject(req, "sync", true);
+
+    J *body = JCreateObject();
+    if (body != NULL) {
+      JAddStringToObject(body, "source", "coffee");
+      JAddNumberToObject(body, "iaq", random(50));
+      JAddItemToObject(req, "body", body);
+    }
+
+    notecard.sendRequest(req);
   }
 
 }
