@@ -17,7 +17,7 @@ The badge consists of the following components:
 * 3 x AA battery pack
 * USB C port for programming.
 
-** Firmware **
+##Firmware##
 
 Currently, the proof of concept has been implemented using Arduino. I plan to implement the code using the RP2040's C SDK. 
 
