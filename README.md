@@ -26,3 +26,4 @@ I have identified the following items as technical debt for this project.
 * Implementing LED behavior for "Spare the Air" alerts
 * The PCB design needs to be revised for low power operation
 * The code needs to be re-written using the Pico C SDK
+* Power profiling the badge
